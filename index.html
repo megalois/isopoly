@@ -616,7 +616,7 @@
       setPortfolios(portfolios);
       setCurrentPortfolio(name);
       refreshPortfolioSelect();
-      clearScene();
+      loadCurrentPortfolio();
     });
   };
 
@@ -872,8 +872,17 @@
     clearScene();
     if (!currentPortfolio) return;
     const portfolios = getPortfolios();
-    const data = portfolios[currentPortfolio];
-    if (!Array.isArray(data)) return;
+    let data = portfolios[currentPortfolio];
+    if (!Array.isArray(data)) data = [];
+    if (data.length === 0) {
+      data = [
+        { id: 1, type: 'single', x: -6, z: -3, name: 'Property 1', valuation: '0.3M' },
+        { id: 2, type: 'apartment', x: 0, z: 2, name: 'Property 2', valuation: '0.3M' },
+        { id: 3, type: 'retail', x: 6, z: -3, name: 'Property 3', valuation: '0.3M' }
+      ];
+      portfolios[currentPortfolio] = data;
+      setPortfolios(portfolios);
+    }
     data.forEach(d => {
       const mesh = builders[d.type]();
       mesh.position.set(snapToGrid(d.x || 0), 0, snapToGrid(d.z || 0));
