@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isometric Properties</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #f8f8f8; overflow: hidden; height: 100vh; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf8f8f8);
+
+    const aspect = window.innerWidth / window.innerHeight;
+    const d = 6;
+    const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+    camera.position.set(12, 9, 12);
+    camera.lookAt(0, 1.2, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableZoom = true;
+    controls.enablePan = false;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.35);
+    dirLight.position.set(5, 10, 5);
+    scene.add(dirLight);
+
+    const color = 0x2dd4bf;
+    const borderColor = 0x0f766e;
+    const highlightColor = 0x99f6e4;
+
+    const bodyMat = new THREE.MeshLambertMaterial({ color });
+    const lineMat = new THREE.LineBasicMaterial({ color: borderColor, linewidth: 2 });
+    const borderMat = new THREE.MeshLambertMaterial({ color: borderColor });
+    const highlightMat = new THREE.MeshLambertMaterial({ color: highlightColor });
+
+    // ============================================================
+    // 1. BIGGER SINGLE-FAMILY HOUSE (with garage)
+    // ============================================================
+    const houseGroup = new THREE.Group();
+    houseGroup.position.set(-4.5, 0, 0);
+
+    const mainGeo = new THREE.BoxGeometry(1.4, 1.6, 1.3);
+    const main = new THREE.Mesh(mainGeo, bodyMat);
+    main.position.set(-0.35, 0.8, 0);
+    houseGroup.add(main);
+
+    const garageGeo = new THREE.BoxGeometry(1.1, 1.0, 1.3);
+    const garage = new THREE.Mesh(garageGeo, bodyMat);
+    garage.position.set(0.85, 0.5, 0);
+    houseGroup.add(garage);
+
+    const mainRoofGeo = new THREE.ConeGeometry(1.05, 0.9, 4);
+    const mainRoof = new THREE.Mesh(mainRoofGeo, bodyMat);
+    mainRoof.position.set(-0.35, 2.05, 0);
+    mainRoof.rotation.y = Math.PI / 4;
+    houseGroup.add(mainRoof);
+
+    const garageRoofGeo = new THREE.BoxGeometry(1.2, 0.06, 1.4);
+    const garageRoof = new THREE.Mesh(garageRoofGeo, bodyMat);
+    garageRoof.position.set(0.85, 1.03, 0);
+    houseGroup.add(garageRoof);
+
+    const doorGeo = new THREE.PlaneGeometry(0.4, 0.7);
+    const door = new THREE.Mesh(doorGeo, borderMat);
+    door.position.set(-0.35, 0.35, 0.66);
+    houseGroup.add(door);
+
+    const gDoorGeo = new THREE.PlaneGeometry(0.6, 0.6);
+    const gDoor = new THREE.Mesh(gDoorGeo, borderMat);
+    gDoor.position.set(0.85, 0.3, 0.66);
+    houseGroup.add(gDoor);
+
+    const mainEdges = new THREE.LineSegments(new THREE.EdgesGeometry(mainGeo), lineMat);
+    mainEdges.position.set(-0.35, 0.8, 0);
+    houseGroup.add(mainEdges);
+
+    const garageEdges = new THREE.LineSegments(new THREE.EdgesGeometry(garageGeo), lineMat);
+    garageEdges.position.set(0.85, 0.5, 0);
+    houseGroup.add(garageEdges);
+
+    const mainRoofEdges = new THREE.LineSegments(new THREE.EdgesGeometry(mainRoofGeo), lineMat);
+    mainRoofEdges.position.set(-0.35, 2.05, 0);
+    mainRoofEdges.rotation.y = Math.PI / 4;
+    houseGroup.add(mainRoofEdges);
+
+    const garageRoofEdges = new THREE.LineSegments(new THREE.EdgesGeometry(garageRoofGeo), lineMat);
+    garageRoofEdges.position.set(0.85, 1.03, 0);
+    houseGroup.add(garageRoofEdges);
+
+    scene.add(houseGroup);
+
+    // ============================================================
+    // 2. APARTMENT (3-story, 2 units per floor, 1 highlighted)
+    // ============================================================
+    const aptGroup = new THREE.Group();
+    aptGroup.position.set(0, 0, 0);
+
+    const bldgGeo = new THREE.BoxGeometry(1.6, 2.4, 1.0);
+    const bldg = new THREE.Mesh(bldgGeo, bodyMat);
+    bldg.position.y = 1.2;
+    aptGroup.add(bldg);
+
+    const aptRoofGeo = new THREE.BoxGeometry(1.7, 0.06, 1.1);
+    const aptRoof = new THREE.Mesh(aptRoofGeo, bodyMat);
+    aptRoof.position.y = 2.43;
+    aptGroup.add(aptRoof);
+
+    const sepGeo = new THREE.BoxGeometry(1.62, 0.03, 1.02);
+    const sep1 = new THREE.Mesh(sepGeo, borderMat);
+    sep1.position.set(0, 0.8, 0);
+    aptGroup.add(sep1);
+
+    const sep2 = new THREE.Mesh(sepGeo, borderMat);
+    sep2.position.set(0, 1.6, 0);
+    aptGroup.add(sep2);
+
+    const divGeo = new THREE.BoxGeometry(0.03, 2.42, 1.02);
+    const div = new THREE.Mesh(divGeo, borderMat);
+    div.position.set(0, 1.2, 0);
+    aptGroup.add(div);
+
+    // Highlighted unit: front, right side, middle floor
+    const unitGeo = new THREE.PlaneGeometry(0.74, 0.74);
+    const unit = new THREE.Mesh(unitGeo, highlightMat);
+    unit.position.set(0.4, 1.2, 0.51);
+    aptGroup.add(unit);
+
+    const bldgEdges = new THREE.LineSegments(new THREE.EdgesGeometry(bldgGeo), lineMat);
+    bldgEdges.position.y = 1.2;
+    aptGroup.add(bldgEdges);
+
+    const aptRoofEdges = new THREE.LineSegments(new THREE.EdgesGeometry(aptRoofGeo), lineMat);
+    aptRoofEdges.position.y = 2.43;
+    aptGroup.add(aptRoofEdges);
+
+    scene.add(aptGroup);
+
+    // ============================================================
+    // 3. RETAIL (commercial)
+    // ============================================================
+    const retailGroup = new THREE.Group();
+    retailGroup.position.set(4.5, 0, 0);
+
+    const retailGeo = new THREE.BoxGeometry(2.2, 1.2, 1.6);
+    const retail = new THREE.Mesh(retailGeo, bodyMat);
+    retail.position.y = 0.6;
+    retailGroup.add(retail);
+
+    const awningGeo = new THREE.BoxGeometry(2.0, 0.06, 0.5);
+    const awning = new THREE.Mesh(awningGeo, bodyMat);
+    awning.position.set(0, 1.05, 0.95);
+    retailGroup.add(awning);
+
+    const rDoorGeo = new THREE.PlaneGeometry(0.6, 0.9);
+    const rDoor = new THREE.Mesh(rDoorGeo, borderMat);
+    rDoor.position.set(0, 0.45, 0.81);
+    retailGroup.add(rDoor);
+
+    const retailEdges = new THREE.LineSegments(new THREE.EdgesGeometry(retailGeo), lineMat);
+    retailEdges.position.y = 0.6;
+    retailGroup.add(retailEdges);
+
+    const awningEdges = new THREE.LineSegments(new THREE.EdgesGeometry(awningGeo), lineMat);
+    awningEdges.position.set(0, 1.05, 0.95);
+    retailGroup.add(awningEdges);
+
+    scene.add(retailGroup);
+
+    // Resize
+    window.addEventListener('resize', () => {
+      const aspect = window.innerWidth / window.innerHeight;
+      camera.left = -d * aspect;
+      camera.right = d * aspect;
+      camera.top = d;
+      camera.bottom = -d;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

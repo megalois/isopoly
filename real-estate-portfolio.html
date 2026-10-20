@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real Estate Portfolio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #ffffff;
+      overflow: hidden;
+      height: 100vh;
+    }
+    canvas { display: block; }
+
+    #ui-panel {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.06),
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 12px 32px rgba(0, 0, 0, 0.08);
+      padding: 22px;
+      width: 270px;
+      z-index: 100;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    #ui-panel h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 14px;
+      letter-spacing: -0.2px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #888888;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 9px 14px;
+      margin-bottom: 7px;
+      border: none;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-add {
+      background: #2dd4bf;
+      color: #0f4e48;
+    }
+    .btn-add:hover {
+      background: #14b8a6;
+      color: white;
+    }
+    .btn-remove {
+      background: #fce8e6;
+      color: #8b3a3a;
+    }
+    .btn-remove:hover {
+      background: #f5cac3;
+    }
+    .btn-remove:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #444444;
+      padding: 7px 10px;
+      font-size: 11px;
+      margin-bottom: 0;
+      font-weight: 600;
+    }
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+    .row .btn { margin-bottom: 0; flex: 1; }
+
+    .input-group {
+      margin-bottom: 10px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 11px;
+      color: #777777;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .input-group input, .input-group select {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid #dddddd;
+      border-radius: 7px;
+      font-size: 13px;
+      outline: none;
+      background: #fff;
+      color: #1a1a1a;
+    }
+    .input-group input:focus, .input-group select:focus {
+      border-color: #2dd4bf;
+      box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.12);
+    }
+    .input-group input:disabled, .input-group select:disabled {
+      background: #f5f5f5;
+      color: #aaaaaa;
+    }
+
+    .divider {
+      height: 1px;
+      background: #e5e5e5;
+      margin: 14px 0;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #777777;
+    }
+    .total-row span:last-child {
+      font-weight: 700;
+      color: #1a1a1a;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+    }
+
+    .property-label {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.96);
+      padding: 5px 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f766e;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        0 4px 10px rgba(0, 0, 0, 0.08);
+      transform: translate(-50%, -100%);
+      white-space: nowrap;
+      z-index: 50;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .property-label.empty {
+      opacity: 0.35;
+    }
+
+    #selection-ring {
+      position: absolute;
+      width: 44px;
+      height: 22px;
+      border: 2px solid #2dd4bf;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      z-index: 40;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    #selection-ring.active {
+      opacity: 1;
+    }
+
+    #hint {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.55);
+      color: #f0f0f0;
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 11px;
+      pointer-events: none;
+      z-index: 100;
+      letter-spacing: 0.2px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 24px;
+      width: 300px;
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.10),
+        0 16px 40px rgba(0, 0, 0, 0.12);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .modal h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 14px;
+    }
+    .modal input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #dddddd;
+      border-radius: 7px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      outline: none;
+      background: #fff;
+      color: #1a1a1a;
+    }
+    .modal input:focus { border-color: #2dd4bf; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-actions .btn { width: auto; margin-bottom: 0; }
+  </style>
+</head>
+<body>
+
+<div id="ui-panel">
+  <h1>Real Estate Portfolio</h1>
+
+  <div class="section-title">Portfolio</div>
+  <div class="input-group">
+    <select id="portfolio-select" onchange="switchPortfolio(this.value)">
+      <option value="">Loading...</option>
+    </select>
+  </div>
+  <div class="row">
+    <button class="btn btn-secondary" onclick="showNewPortfolio()">New</button>
+    <button class="btn btn-secondary" onclick="showRenamePortfolio()">Rename</button>
+    <button class="btn btn-secondary" onclick="deletePortfolio()">Delete</button>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">Add Property</div>
+  <button class="btn btn-add" onclick="addProperty('single')">+ Single-Family</button>
+  <button class="btn btn-add" onclick="addProperty('apartment')">+ Apartment</button>
+  <button class="btn btn-add" onclick="addProperty('retail')">+ Retail</button>
+
+  <div class="divider"></div>
+
+  <div class="section-title">Selected Property</div>
+  <div class="input-group">
+    <label>Name</label>
+    <input type="text" id="name-input" placeholder="Property name" disabled oninput="updateName(this.value)">
+  </div>
+  <div class="input-group">
+    <label>Valuation</label>
+    <input type="text" id="valuation-input" placeholder="0.5M" disabled oninput="updateValuation(this.value)">
+  </div>
+  <button class="btn btn-remove" id="remove-btn" disabled onclick="removeSelected()">Remove Property</button>
+
+  <div class="divider"></div>
+
+  <div class="total-row">
+    <span>Total Value</span>
+    <span id="total-value">—</span>
+  </div>
+</div>
+
+<div id="selection-ring"></div>
+<div id="hint">Click to select · Drag to move · Right-click to orbit</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">New Portfolio</h2>
+    <input type="text" id="modal-input" placeholder="Portfolio name" onkeydown="if(event.key==='Enter')modalConfirm()">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="modalCancel()">Cancel</button>
+      <button class="btn btn-add" onclick="modalConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+  // ===== SCENE =====
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
+
+  const aspect = window.innerWidth / window.innerHeight;
+  const d = 10;
+  const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+  camera.position.set(14, 11, 14);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableZoom = true;
+  controls.enablePan = true;
+  controls.mouseButtons = {
+    LEFT: null,
+    MIDDLE: THREE.MOUSE.PAN,
+    RIGHT: THREE.MOUSE.ROTATE
+  };
+
+  // ===== LIGHTING =====
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xffffff, 0.85);
+  keyLight.position.set(8, 14, 6);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.camera.near = 1;
+  keyLight.shadow.camera.far = 60;
+  keyLight.shadow.camera.left = -20;
+  keyLight.shadow.camera.right = 20;
+  keyLight.shadow.camera.top = 20;
+  keyLight.shadow.camera.bottom = -20;
+  keyLight.shadow.bias = -0.0005;
+  keyLight.shadow.radius = 4;
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.25);
+  fillLight.position.set(-6, 8, -4);
+  scene.add(fillLight);
+
+  // ===== GROUND (warm light gray) =====
+  const groundMat = new THREE.MeshBasicMaterial({
+    color: 0xf2f2f2
+  });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const grid = new THREE.GridHelper(40, 40, 0xbbbbbb, 0xbbbbbb);
+  grid.position.y = 0.005;
+  const gridMat = grid.material;
+  gridMat.transparent = true;
+  gridMat.opacity = 0.5;
+  scene.add(grid);
+
+  // ===== MATERIALS =====
+  const color = 0x2dd4bf;
+  const borderColor = 0x0f766e;
+  const highlightColor = 0x99f6e4;
+  const bodyMat = new THREE.MeshLambertMaterial({ color });
+  const lineMat = new THREE.LineBasicMaterial({ color: borderColor });
+  const borderMat = new THREE.MeshLambertMaterial({ color: borderColor });
+  const highlightMat = new THREE.MeshLambertMaterial({ color: highlightColor });
+
+  // ===== MODEL BUILDERS (corner-based, integer tile footprints) =====
+  // Group origin = back-left corner of footprint on the ground.
+  // userData.centerOffset = center of footprint relative to origin.
+
+  function buildSingleFamily() {
+    const g = new THREE.Group();
+    g.userData.centerOffset = new THREE.Vector3(1.5, 0, 1.0);
+    g.userData.footprint = { w: 3, d: 2 };
+
+    // Main house (left side)
+    const mainGeo = new THREE.BoxGeometry(1.6, 1.5, 1.8);
+    const main = new THREE.Mesh(mainGeo, bodyMat);
+    main.position.set(0.8, 0.75, 1.0);
+    main.castShadow = true;
+    main.receiveShadow = true;
+    g.add(main);
+
+    // Garage (right side)
+    const garageGeo = new THREE.BoxGeometry(1.4, 1.0, 1.8);
+    const garage = new THREE.Mesh(garageGeo, bodyMat);
+    garage.position.set(2.3, 0.5, 1.0);
+    garage.castShadow = true;
+    garage.receiveShadow = true;
+    g.add(garage);
+
+    // Main roof (pyramid) — protrudes past walls
+    const mainRoofGeo = new THREE.ConeGeometry(1.3, 0.5, 4);
+    const mainRoof = new THREE.Mesh(mainRoofGeo, bodyMat);
+    mainRoof.position.set(0.8, 1.75, 1.0);
+    mainRoof.rotation.y = Math.PI / 4;
+    mainRoof.castShadow = true;
+    mainRoof.receiveShadow = true;
+    g.add(mainRoof);
+
+    // Garage roof (flat)
+    const garageRoofGeo = new THREE.BoxGeometry(1.5, 0.06, 1.9);
+    const garageRoof = new THREE.Mesh(garageRoofGeo, bodyMat);
+    garageRoof.position.set(2.3, 1.03, 1.0);
+    garageRoof.castShadow = true;
+    garageRoof.receiveShadow = true;
+    g.add(garageRoof);
+
+    // Door
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.65), borderMat);
+    door.position.set(0.8, 0.325, 1.91);
+    g.add(door);
+
+    // Garage door
+    const gDoor = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), borderMat);
+    gDoor.position.set(2.3, 0.275, 1.91);
+    g.add(gDoor);
+
+    // Edge lines
+    const e1 = new THREE.LineSegments(new THREE.EdgesGeometry(mainGeo), lineMat);
+    e1.position.set(0.8, 0.75, 1.0);
+    g.add(e1);
+
+    const e2 = new THREE.LineSegments(new THREE.EdgesGeometry(garageGeo), lineMat);
+    e2.position.set(2.3, 0.5, 1.0);
+    g.add(e2);
+
+    const e3 = new THREE.LineSegments(new THREE.EdgesGeometry(mainRoofGeo), lineMat);
+    e3.position.set(0.8, 1.75, 1.0);
+    e3.rotation.y = Math.PI / 4;
+    g.add(e3);
+
+    const e4 = new THREE.LineSegments(new THREE.EdgesGeometry(garageRoofGeo), lineMat);
+    e4.position.set(2.3, 1.03, 1.0);
+    g.add(e4);
+
+    return g;
+  }
+
+  function buildApartment() {
+    const g = new THREE.Group();
+    g.userData.centerOffset = new THREE.Vector3(1.0, 0, 0.5);
+    g.userData.footprint = { w: 2, d: 1 };
+
+    const bldgGeo = new THREE.BoxGeometry(1.8, 3.0, 0.9);
+    const bldg = new THREE.Mesh(bldgGeo, bodyMat);
+    bldg.position.set(1.0, 1.5, 0.5);
+    bldg.castShadow = true;
+    bldg.receiveShadow = true;
+    g.add(bldg);
+
+    const roofGeo = new THREE.BoxGeometry(1.9, 0.06, 1.0);
+    const roof = new THREE.Mesh(roofGeo, bodyMat);
+    roof.position.set(1.0, 3.03, 0.5);
+    roof.castShadow = true;
+    roof.receiveShadow = true;
+    g.add(roof);
+
+    const sepGeo = new THREE.BoxGeometry(1.82, 0.03, 0.92);
+    const sep1 = new THREE.Mesh(sepGeo, borderMat);
+    sep1.position.set(1.0, 1.0, 0.5);
+    g.add(sep1);
+
+    const sep2 = new THREE.Mesh(sepGeo, borderMat);
+    sep2.position.set(1.0, 2.0, 0.5);
+    g.add(sep2);
+
+    const divGeo = new THREE.BoxGeometry(0.03, 3.0, 0.92);
+    const div = new THREE.Mesh(divGeo, borderMat);
+    div.position.set(1.0, 1.5, 0.5);
+    g.add(div);
+
+    const unit = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 0.97), highlightMat);
+    unit.position.set(1.46, 1.5, 0.96);
+    g.add(unit);
+
+    const e1 = new THREE.LineSegments(new THREE.EdgesGeometry(bldgGeo), lineMat);
+    e1.position.set(1.0, 1.5, 0.5);
+    g.add(e1);
+
+    const e2 = new THREE.LineSegments(new THREE.EdgesGeometry(roofGeo), lineMat);
+    e2.position.set(1.0, 3.03, 0.5);
+    g.add(e2);
+
+    return g;
+  }
+
+  function buildRetail() {
+    const g = new THREE.Group();
+    g.userData.centerOffset = new THREE.Vector3(1.5, 0, 1.0);
+    g.userData.footprint = { w: 3, d: 2 };
+
+    const retailGeo = new THREE.BoxGeometry(2.9, 1.0, 1.9);
+    const retail = new THREE.Mesh(retailGeo, bodyMat);
+    retail.position.set(1.5, 0.5, 1.0);
+    retail.castShadow = true;
+    retail.receiveShadow = true;
+    g.add(retail);
+
+    const awningGeo = new THREE.BoxGeometry(2.9, 0.06, 0.5);
+    const awning = new THREE.Mesh(awningGeo, bodyMat);
+    awning.position.set(1.5, 1.05, 1.75);
+    awning.castShadow = true;
+    awning.receiveShadow = true;
+    g.add(awning);
+
+    const rDoor = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), borderMat);
+    rDoor.position.set(1.5, 0.4, 1.96);
+    g.add(rDoor);
+
+    const e1 = new THREE.LineSegments(new THREE.EdgesGeometry(retailGeo), lineMat);
+    e1.position.set(1.5, 0.5, 1.0);
+    g.add(e1);
+
+    const e2 = new THREE.LineSegments(new THREE.EdgesGeometry(awningGeo), lineMat);
+    e2.position.set(1.5, 1.05, 1.75);
+    g.add(e2);
+
+    return g;
+  }
+
+  const builders = { single: buildSingleFamily, apartment: buildApartment, retail: buildRetail };
+  const labelHeights = { single: 2.3, apartment: 3.3, retail: 1.4 };
+  const GRID_SIZE = 1;
+
+  // ===== STATE =====
+  let properties = [];
+  let selectedId = null;
+  let nextId = 1;
+  let currentPortfolio = '';
+
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let isDragging = false;
+  let dragProp = null;
+
+  const valInput = document.getElementById('valuation-input');
+  const nameInput = document.getElementById('name-input');
+  const removeBtn = document.getElementById('remove-btn');
+  const ring = document.getElementById('selection-ring');
+  const totalEl = document.getElementById('total-value');
+  const portfolioSelect = document.getElementById('portfolio-select');
+
+  // ===== PORTFOLIO MANAGEMENT =====
+  function getPortfolios() {
+    try { return JSON.parse(localStorage.getItem('rePortfolios') || '{}'); }
+    catch (e) { return {}; }
+  }
+  function setPortfolios(data) {
+    localStorage.setItem('rePortfolios', JSON.stringify(data));
+  }
+  function getCurrentPortfolio() {
+    return localStorage.getItem('reCurrentPortfolio') || '';
+  }
+  function setCurrentPortfolio(name) {
+    localStorage.setItem('reCurrentPortfolio', name);
+    currentPortfolio = name;
+  }
+
+  function refreshPortfolioSelect() {
+    const portfolios = getPortfolios();
+    const names = Object.keys(portfolios);
+    portfolioSelect.innerHTML = '';
+    if (names.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No portfolios';
+      portfolioSelect.appendChild(opt);
+      return;
+    }
+    names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      if (name === currentPortfolio) opt.selected = true;
+      portfolioSelect.appendChild(opt);
+    });
+  }
+
+  window.switchPortfolio = function(name) {
+    if (!name) return;
+    saveCurrentPortfolio();
+    setCurrentPortfolio(name);
+    loadCurrentPortfolio();
+  };
+
+  window.showNewPortfolio = function() {
+    openModal('New Portfolio', name => {
+      if (!name) return;
+      const portfolios = getPortfolios();
+      if (portfolios[name]) { alert('Portfolio already exists'); return; }
+      portfolios[name] = [];
+      setPortfolios(portfolios);
+      setCurrentPortfolio(name);
+      refreshPortfolioSelect();
+      clearScene();
+    });
+  };
+
+  window.showRenamePortfolio = function() {
+    if (!currentPortfolio) return;
+    openModal('Rename Portfolio', name => {
+      if (!name || name === currentPortfolio) return;
+      const portfolios = getPortfolios();
+      if (portfolios[name]) { alert('Portfolio already exists'); return; }
+      portfolios[name] = portfolios[currentPortfolio];
+      delete portfolios[currentPortfolio];
+      setPortfolios(portfolios);
+      setCurrentPortfolio(name);
+      refreshPortfolioSelect();
+    });
+  };
+
+  window.deletePortfolio = function() {
+    if (!currentPortfolio) return;
+    if (!confirm(`Delete portfolio "${currentPortfolio}"?`)) return;
+    const portfolios = getPortfolios();
+    delete portfolios[currentPortfolio];
+    setPortfolios(portfolios);
+    const names = Object.keys(portfolios);
+    setCurrentPortfolio(names[0] || '');
+    refreshPortfolioSelect();
+    clearScene();
+    if (currentPortfolio) loadCurrentPortfolio();
+  };
+
+  // ===== MODAL =====
+  const modal = document.getElementById('modal');
+  const modalTitle = document.getElementById('modal-title');
+  const modalInput = document.getElementById('modal-input');
+  let modalCallback = null;
+
+  function openModal(title, callback) {
+    modalTitle.textContent = title;
+    modalInput.value = '';
+    modalCallback = callback;
+    modal.classList.add('active');
+    modalInput.focus();
+  }
+  window.modalCancel = function() {
+    modal.classList.remove('active');
+    modalCallback = null;
+  };
+  window.modalConfirm = function() {
+    if (modalCallback) modalCallback(modalInput.value.trim());
+    modal.classList.remove('active');
+    modalCallback = null;
+  };
+
+  // ===== LABELS =====
+  function createLabel(text) {
+    const div = document.createElement('div');
+    div.className = 'property-label' + (!text ? ' empty' : '');
+    div.textContent = text || '—';
+    document.body.appendChild(div);
+    return div;
+  }
+
+  function updateLabelText(p) {
+    const parts = [];
+    if (p.name) parts.push(p.name);
+    if (p.valuation) parts.push(p.valuation);
+    const text = parts.join(' · ');
+    p.label.textContent = text || '—';
+    p.label.className = 'property-label' + (!text ? ' empty' : '');
+  }
+
+  function getModelCenter(p) {
+    const offset = p.mesh.userData.centerOffset || new THREE.Vector3(0, 0, 0);
+    return p.mesh.position.clone().add(offset);
+  }
+
+  function updateLabels() {
+    properties.forEach(p => {
+      const center = getModelCenter(p);
+      const pos = center.clone();
+      pos.y += labelHeights[p.type];
+      pos.project(camera);
+      const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+      p.label.style.left = x + 'px';
+      p.label.style.top = (y - 8) + 'px';
+    });
+    updateRing();
+  }
+
+  function updateRing() {
+    if (!selectedId) { ring.classList.remove('active'); return; }
+    const p = properties.find(p => p.id === selectedId);
+    if (!p) { ring.classList.remove('active'); return; }
+    const center = getModelCenter(p);
+    const pos = center.clone();
+    pos.project(camera);
+    const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+    ring.style.left = x + 'px';
+    ring.style.top = y + 'px';
+    ring.classList.add('active');
+  }
+
+  // ===== PROPERTY ACTIONS =====
+  function getAllMeshes() {
+    const meshes = [];
+    properties.forEach(p => p.mesh.traverse(c => { if (c.isMesh) meshes.push(c); }));
+    return meshes;
+  }
+
+  function findPropByMesh(mesh) {
+    return properties.find(p => {
+      let found = false;
+      p.mesh.traverse(c => { if (c === mesh) found = true; });
+      return found;
+    });
+  }
+
+  function snapToGrid(v) {
+    return Math.round(v / GRID_SIZE) * GRID_SIZE;
+  }
+
+  function clearScene() {
+    properties.forEach(p => {
+      scene.remove(p.mesh);
+      p.label.remove();
+    });
+    properties = [];
+    selectedId = null;
+    nextId = 1;
+    nameInput.disabled = true; nameInput.value = '';
+    valInput.disabled = true; valInput.value = '';
+    removeBtn.disabled = true;
+    ring.classList.remove('active');
+    totalEl.textContent = '—';
+  }
+
+  window.addProperty = function(type) {
+    const mesh = builders[type]();
+    const fp = mesh.userData.footprint;
+    // Spawn so the entire model fits on screen, away from edges
+    const maxDist = 6;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 2 + Math.random() * 4;
+    mesh.position.set(
+      snapToGrid(Math.cos(angle) * dist),
+      0,
+      snapToGrid(Math.sin(angle) * dist)
+    );
+    scene.add(mesh);
+    const label = createLabel('');
+    const prop = { id: nextId++, type, mesh, label, name: '', valuation: '' };
+    properties.push(prop);
+    selectProperty(prop.id);
+    saveCurrentPortfolio();
+  };
+
+  window.removeSelected = function() {
+    if (!selectedId) return;
+    const idx = properties.findIndex(p => p.id === selectedId);
+    if (idx === -1) return;
+    const p = properties[idx];
+    scene.remove(p.mesh);
+    p.label.remove();
+    properties.splice(idx, 1);
+    selectedId = null;
+    nameInput.disabled = true; nameInput.value = '';
+    valInput.disabled = true; valInput.value = '';
+    removeBtn.disabled = true;
+    ring.classList.remove('active');
+    saveCurrentPortfolio();
+    updateTotal();
+  };
+
+  window.updateName = function(value) {
+    if (!selectedId) return;
+    const p = properties.find(p => p.id === selectedId);
+    if (!p) return;
+    p.name = value;
+    updateLabelText(p);
+    saveCurrentPortfolio();
+  };
+
+  window.updateValuation = function(value) {
+    if (!selectedId) return;
+    const p = properties.find(p => p.id === selectedId);
+    if (!p) return;
+    p.valuation = value;
+    updateLabelText(p);
+    saveCurrentPortfolio();
+    updateTotal();
+  };
+
+  function selectProperty(id) {
+    selectedId = id;
+    const p = properties.find(p => p.id === id);
+    if (p) {
+      nameInput.disabled = false;
+      nameInput.value = p.name;
+      valInput.disabled = false;
+      valInput.value = p.valuation;
+      removeBtn.disabled = false;
+    } else {
+      nameInput.disabled = true; nameInput.value = '';
+      valInput.disabled = true; valInput.value = '';
+      removeBtn.disabled = true;
+    }
+    updateRing();
+  }
+
+  function parseValue(str) {
+    if (!str) return 0;
+    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) return 0;
+    const lower = str.toLowerCase();
+    if (lower.includes('m')) return num * 1000000;
+    if (lower.includes('k')) return num * 1000;
+    if (lower.includes('b')) return num * 1000000000;
+    return num;
+  }
+
+  function formatValue(n) {
+    if (n === 0) return '—';
+    if (n >= 1000000000) return (n / 1000000000).toFixed(2) + 'B';
+    if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toLocaleString();
+  }
+
+  function updateTotal() {
+    const total = properties.reduce((sum, p) => sum + parseValue(p.valuation), 0);
+    totalEl.textContent = formatValue(total);
+  }
+
+  // ===== SAVE / LOAD =====
+  function saveCurrentPortfolio() {
+    if (!currentPortfolio) return;
+    const data = properties.map(p => ({
+      id: p.id,
+      type: p.type,
+      x: p.mesh.position.x,
+      z: p.mesh.position.z,
+      name: p.name,
+      valuation: p.valuation
+    }));
+    const portfolios = getPortfolios();
+    portfolios[currentPortfolio] = data;
+    setPortfolios(portfolios);
+  }
+
+  function loadCurrentPortfolio() {
+    clearScene();
+    if (!currentPortfolio) return;
+    const portfolios = getPortfolios();
+    const data = portfolios[currentPortfolio];
+    if (!Array.isArray(data)) return;
+    data.forEach(d => {
+      const mesh = builders[d.type]();
+      mesh.position.set(snapToGrid(d.x || 0), 0, snapToGrid(d.z || 0));
+      scene.add(mesh);
+      const prop = {
+        id: d.id,
+        type: d.type,
+        mesh,
+        label: createLabel(''),
+        name: d.name || '',
+        valuation: d.valuation || ''
+      };
+      updateLabelText(prop);
+      properties.push(prop);
+      nextId = Math.max(nextId, d.id + 1);
+    });
+    updateTotal();
+  }
+
+  // ===== INTERACTION =====
+  renderer.domElement.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const hits = raycaster.intersectObjects(getAllMeshes());
+    if (hits.length > 0) {
+      const prop = findPropByMesh(hits[0].object);
+      if (prop) {
+        isDragging = true;
+        dragProp = prop;
+        controls.enabled = false;
+        selectProperty(prop.id);
+      }
+    } else {
+      selectedId = null;
+      nameInput.disabled = true; nameInput.value = '';
+      valInput.disabled = true; valInput.value = '';
+      removeBtn.disabled = true;
+      ring.classList.remove('active');
+    }
+  });
+
+  window.addEventListener('pointermove', e => {
+    if (!isDragging || !dragProp) return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObject(ground);
+    if (hits.length > 0) {
+      dragProp.mesh.position.x = snapToGrid(hits[0].point.x);
+      dragProp.mesh.position.z = snapToGrid(hits[0].point.z);
+    }
+  });
+
+  window.addEventListener('pointerup', e => {
+    if (isDragging) {
+      isDragging = false;
+      dragProp = null;
+      controls.enabled = true;
+      saveCurrentPortfolio();
+    }
+  });
+
+  // ===== LOOP =====
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+    updateLabels();
+  }
+  animate();
+
+  // ===== RESIZE =====
+  window.addEventListener('resize', () => {
+    const aspect = window.innerWidth / window.innerHeight;
+    camera.left = -d * aspect;
+    camera.right = d * aspect;
+    camera.top = d;
+    camera.bottom = -d;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Init
+  currentPortfolio = getCurrentPortfolio();
+  if (!currentPortfolio) {
+    const portfolios = getPortfolios();
+    const names = Object.keys(portfolios);
+    if (names.length > 0) {
+      currentPortfolio = names[0];
+    } else {
+      currentPortfolio = 'My Portfolio';
+      portfolios[currentPortfolio] = [];
+      setPortfolios(portfolios);
+    }
+    setCurrentPortfolio(currentPortfolio);
+  }
+  refreshPortfolioSelect();
+  loadCurrentPortfolio();
+</script>
+</body>
+</html>
